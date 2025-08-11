@@ -1,4 +1,5 @@
 #uvicorn algo_scripts.algotrade.scripts.server.slv_server_data_loader:app --log-level debug
+from get_intra_stock_alerts import get_intraday_stock_alerts
 
 from algo_scripts.algotrade.scripts.trade_utils.trade_logger import get_trade_actions_dynamic_logger, \
     get_sell_logger_name, get_screener_logger_name
@@ -369,7 +370,34 @@ async def open_high_low_loader_action():
     finally:
         session.close()
 
+@app.get("/intraday/screener/intraday_alerts/loader/")
+async def intraday_alerts_loader_action():
+    logger_prefix = "load_screener_"
+    screener_name = "intraday_alerts"
+    process_logger_name = get_screener_logger_name(logger_prefix, screener_name)
+    logger = get_trade_actions_dynamic_logger(process_logger_name)  # Dynamic logger
+
+    session = next(get_db_session())
+    repo = ScreenerLogRepository(session)
+    log_entry = repo.start_log(process_logger_name)
+
+    logger.info(f"Started Processing {screener_name} at {get_current_ist_time_as_str()}")
+    try:
+        get_intraday_stock_alerts(logger)
+
+        logger.info(f"Completed Processing {screener_name} at {get_current_ist_time_as_str()}")
+        repo.complete_log(log_entry.log_id, status="COMPLETED")
+        return {"status": f"{screener_name} loaded successfully"}
+    except Exception as e:
+        # mark failure and capture message
+        repo.complete_log(log_entry.log_id, status="FAILED", error_message=str(e))
+        logger.error(f"Failed Processing {screener_name}: {e}", exc_info=True)
+        # re-raise or convert to HTTP error
+        raise HTTPException(status_code=500, detail=f"{screener_name} processing failed: {str(e)}")
+    finally:
+        session.close()
+
+
 @app.get("/screener_data_loader/health")
 def health_check():
     return {"status": "Screener_Data_Loader healthy"}
-

@@ -335,6 +335,6 @@ def wait_for_file(download_dir, file_name,logger, timeout=60, poll_interval=1):
     raise TimeoutException(f"Timed out after {timeout}s waiting for {file_name} to finish writing")
 
 # Main loop to keep the scheduler running
-if __name__ == "__main__":
-    logger = logging.getLogger("FallbackLogger")  # Initialize fallback logger
-    get_intraday_stock_alerts(logger)
+#if __name__ == "__main__":
+#    logger = logging.getLogger("FallbackLogger")  # Initialize fallback logger
+#    get_intraday_stock_alerts(logger)
