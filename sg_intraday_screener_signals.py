@@ -169,8 +169,7 @@ class SgIntradayScreenerSignalsRepository:
                     # Add only the missing values
                     updated_bearish_tags = existing_bearish_tags.union(new_bearish_tags)
                     existing_entry.bearish_milestone_tags = " ".join(updated_bearish_tags) if updated_bearish_tags else None
-
-            else:
+                else:
                     print(f"➕ Inserting new entry for {record['stock_name']}")
                     new_entry = SgIntradayScreenerSignals(**record)
                     self.session.add(new_entry)
@@ -277,10 +276,61 @@ class SgIntradayScreenerSignalsRepository:
 if __name__ == "__main__":
     from algo_scripts.algotrade.scripts.trading_style.intraday.core.intra_utils.db.management.database_manager import engine, Base
     Base.metadata.create_all(engine)
-    """"
+
+    # Create a repository instance
     repo = SgIntradayScreenerSignalsRepository()
-    results = repo.fetch_signals_by_date_stock_and_screeners("2025-04-23", "OBEROIRLTY", ["TOP_GAINER"])
-    for sig in results:
-        print("Printing")
-        print(sig.id, sig.screener, sig.ltp, sig.price_change)
-    """
+
+    # Define dummy data
+    dummy_screener = "DUMMY_SCREENER"
+    dummy_screener_type = "DUMMY_TYPE"
+    dummy_stock_name = "DUMMYSTOCK"
+    dummy_trade_type = "BUY"
+    dummy_level = 123.45
+    dummy_date = today_ist()
+
+    dummy_data = [
+        ["stock_name", "trade_type", "level", "screener_type"],
+        [dummy_stock_name, dummy_trade_type, dummy_level, dummy_screener_type]
+    ]
+
+    # --- Test Insertion ---
+    print("\n--- Testing Insertion ---")
+    print(f"Inserting dummy entry for {dummy_stock_name}")
+    repo.upsert(dummy_data, dummy_screener)
+
+    # --- Test Fetching ---
+    print("\n--- Testing Fetch ---")
+    fetched_signals = repo.fetch_signals_by_date_stock_and_screeners(
+        screener_date=dummy_date,
+        stock_name=dummy_stock_name
+    )
+    if fetched_signals:
+        print(f"✅ Successfully fetched {len(fetched_signals)} signal(s) for {dummy_stock_name}.")
+        for sig in fetched_signals:
+            print(f"  - ID: {sig.id}, Screener: {sig.screener}, Stock: {sig.stock_name}, Level: {sig.level}")
+    else:
+        print(f"❌ Failed to fetch signal for {dummy_stock_name}.")
+
+
+    # --- Test Deletion ---
+    print("\n--- Testing Deletion ---")
+    print(f"Deleting dummy entry with screener_type: {dummy_screener_type}")
+    deleted_count = repo.delete_by_date_and_type(
+        screener_date=dummy_date,
+        screener_type=dummy_screener_type
+    )
+    if deleted_count > 0:
+        print(f"✅ Successfully deleted {deleted_count} record(s).")
+    else:
+        print("❌ No records were deleted.")
+
+    # --- Verify Deletion ---
+    print("\n--- Verifying Deletion ---")
+    fetched_signals_after_delete = repo.fetch_signals_by_date_stock_and_screeners(
+        screener_date=dummy_date,
+        stock_name=dummy_stock_name
+    )
+    if not fetched_signals_after_delete:
+        print(f"✅ Verification successful. No signals found for {dummy_stock_name} after deletion.")
+    else:
+        print(f"❌ Verification failed. Found {len(fetched_signals_after_delete)} signal(s) for {dummy_stock_name}.")
