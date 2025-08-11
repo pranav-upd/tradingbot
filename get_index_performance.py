@@ -3,8 +3,8 @@ import logging
 # suppress SQL text logging
 logging.getLogger("sqlalchemy.engine").setLevel(logging.WARNING)
 
-from algo_scripts.algotrade.scripts.trading_style.intraday.strategies.scalping_915.scalp_src.update_nse_index import \
-    write_nse_to_db
+# from algo_scripts.algotrade.scripts.trading_style.intraday.strategies.scalping_915.scalp_src.update_nse_index import \
+#     write_nse_to_db
 
 from selenium import webdriver
 from selenium.webdriver.common.by import By
