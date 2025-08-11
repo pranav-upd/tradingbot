@@ -1,0 +1,2 @@
+class SgOhlSignalsRepository:
+    pass

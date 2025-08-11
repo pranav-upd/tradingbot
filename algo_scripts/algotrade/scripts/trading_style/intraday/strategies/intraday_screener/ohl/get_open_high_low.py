@@ -120,3 +120,133 @@ def get_ohl_stocks_intra_screener(logger):
         logger.info(f"Found {len(sell_signals)} potential sell signals.")
 
     return buy_signals, sell_signals
+
+
+if __name__ == "__main__":
+    # This main block is for demonstrating the functionality of the script's functions.
+    # It includes extensive mocking of dependencies because the required modules are not available in the current environment.
+
+    # Basic logger setup for demonstration
+    logging.basicConfig(level=logging.INFO)
+    logger = logging.getLogger(__name__)
+
+    # --- Mocking Dependencies ---
+
+    # Mocking fyers_apiv3 since it's an external dependency
+    class MockFyersModelClass:
+        def __init__(self, token, is_async, client_id, log_path):
+            pass
+
+        def quotes(self, data):
+            # Simulate the response from the Fyers API for quotes
+            return {
+                "s": "ok",
+                "d": [
+                    {
+                        "n": "NSE:SBIN-EQ",
+                        "v": {
+                            "lp": 650.00,
+                            "prev_close_price": 640.00,
+                            "chp": 1.56
+                        }
+                    },
+                    {
+                        "n": "NSE:RELIANCE-EQ",
+                        "v": {
+                            "lp": 2900.00,
+                            "prev_close_price": 2850.00,
+                            "chp": 1.75
+                        }
+                    }
+                ]
+            }
+
+    class MockFyersModelModule:
+        FyersModel = MockFyersModelClass
+
+    fyersModel = MockFyersModelModule
+
+
+    # Mocking database and utility functions that are not available
+    class MockIndexSnapshot:
+        def __init__(self, breadth_trend):
+            self.breadth_trend = breadth_trend
+
+    class MockIndexSnapshotRepository:
+        def __init__(self, session=None):
+            pass
+        def get_snapshot_by_date_and_index(self, date_str, index):
+            # Return "BULLISH" or "BEARISH" trend for testing
+            return [MockIndexSnapshot("BULLISH")]
+
+    class MockSgOhlSignalsRepository:
+        def get_by_screener_date_and_screener(self, date_str):
+            # Dummy OHL data
+            return [
+                (None, None, None, "Open-Low", "SBIN", None, "PRB"),
+                (None, None, None, "Open-High", "RELIANCE", None, "PRB")
+            ]
+
+    class MockTVSignalsRepository:
+        def __init__(self, session=None):
+            pass
+        def check_stocks_by_date_and_screener(self, symbols, date_str):
+            # Return the symbols that pass the check
+            return [( (s,), ) for s in symbols]
+
+    class MockIntraAlert:
+        def __init__(self, level):
+            self.level = level
+
+    class MockSgIntradayScreenerSignalsRepository:
+        def fetch_signals_by_date_stock_and_screeners(self, date_str, stock_name):
+            # Dummy levels for stocks
+            if "SBIN" in stock_name:
+                return [MockIntraAlert(645.00)]
+            if "RELIANCE" in stock_name:
+                return [MockIntraAlert(2910.00)]
+            return []
+
+    def mock_get_today_date_as_str():
+        return "2024-01-01"
+
+    def mock_get_db_session():
+        return None
+
+    # Replace the actual imports with our mocks
+    IndexSnapshotRepository = MockIndexSnapshotRepository
+    SgOhlSignalsRepository = MockSgOhlSignalsRepository
+    TVSignalsRepository = MockTVSignalsRepository
+    SgIntradayScreenerSignalsRepository = MockSgIntradayScreenerSignalsRepository
+    get_today_date_as_str = mock_get_today_date_as_str
+    get_db_session = mock_get_db_session
+
+    # --- Invoking Functions with Dummy Data ---
+
+    logger.info("--- Demonstrating get_quotes function ---")
+    mock_fyers_token = fyersModel.FyersModel(token="dummy_token", is_async=False, client_id="dummy_client", log_path=".")
+    dummy_symbols = ["SBIN", "RELIANCE"]
+    quotes = get_quotes(mock_fyers_token, dummy_symbols, logger)
+    logger.info(f"get_quotes returned: {json.dumps(quotes, indent=2)}")
+
+    logger.info("\n--- Demonstrating get_intra_stock_data function ---")
+    stock_data = get_intra_stock_data(mock_fyers_token, dummy_symbols, logger)
+    logger.info(f"get_intra_stock_data returned: {json.dumps(stock_data, indent=2)}")
+
+    logger.info("\n--- Demonstrating get_ohl_stocks_intra_screener (BULLISH scenario) ---")
+    # In this scenario, the mock Index repo returns "BULLISH"
+    buy_signals, sell_signals = get_ohl_stocks_intra_screener(logger)
+    logger.info(f"Buy signals: {buy_signals}")
+    logger.info(f"Sell signals: {sell_signals}")
+
+    logger.info("\n--- Demonstrating get_ohl_stocks_intra_screener (BEARISH scenario) ---")
+    # We need to adjust the mock to simulate a BEARISH market
+    class MockIndexSnapshotRepositoryBearish(MockIndexSnapshotRepository):
+        def get_snapshot_by_date_and_index(self, date_str, index):
+            return [MockIndexSnapshot("BEARISH")]
+
+    IndexSnapshotRepository = MockIndexSnapshotRepositoryBearish
+
+    buy_signals, sell_signals = get_ohl_stocks_intra_screener(logger)
+    logger.info(f"Buy signals: {buy_signals}")
+    logger.info(f"Sell signals: {sell_signals}")
