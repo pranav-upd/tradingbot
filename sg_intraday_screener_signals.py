@@ -113,14 +113,15 @@ class SgIntradayScreenerSignalsRepository:
                 record["is_active"] = True
                 record["is_processed"] = False
                 record["screener_date"] = today_ist()
+                
 
                 if "screener_run_time" in record:
                     record["screener_run_time"] = self.to_ist(record["screener_run_time"])
                 if "break_time" in record:
                     record["break_time"] = self.to_ist(record["break_time"])
 
-                # Convert numeric fields safely
-                for key in ["price_change", "stock_momentum_score", "ltp", "index_contribution", "break_price", "S3", "S2", "S1", "R1", "R2", "R3"]:
+            # Convert numeric fields safely
+            for key in ["price_change", "stock_momentum_score", "ltp", "index_contribution", "break_price", "S3", "S2", "S1", "R1", "R2", "R3"]:
                     if key in record and record[key] is not None:
                         try:
                             record[key] = float(record[key])
@@ -283,4 +284,5 @@ if __name__ == "__main__":
     for sig in results:
         print("Printing")
         print(sig.id, sig.screener, sig.ltp, sig.price_change)
+
     """
